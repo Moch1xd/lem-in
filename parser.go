@@ -41,6 +41,9 @@ func ParseFile(filename string) (AntFarm, error) {
 			if len(pieces) != 2 {
 				return farm, fmt.Errorf("invalid tunnel definition: %s", line)
 			}
+			if pieces[0] == pieces[1] {
+				return farm, fmt.Errorf("tunnel cannot connect a room to itself: %s", line)
+			}
 			tunnel := Tunnel{Room1: pieces[0], Room2: pieces[1]}
 			farm.Tunnels = append(farm.Tunnels, tunnel)
 		} else {
@@ -54,6 +57,11 @@ func ParseFile(filename string) (AntFarm, error) {
 				return farm, fmt.Errorf("invalid room coordinates: %s", line)
 			}
 			room := Room{Name: parts[0], X: x, Y: y}
+			for _, existingRoom := range farm.Rooms {
+				if existingRoom.Name == room.Name {
+					return farm, fmt.Errorf("duplicate room name: %s", room.Name)
+				}
+			}
 			farm.Rooms = append(farm.Rooms, room)
 			if startRoom {
 				farm.StartRoom = room
@@ -63,6 +71,14 @@ func ParseFile(filename string) (AntFarm, error) {
 				endRoom = false
 			}
 		}
+	}
+
+	if farm.StartRoom.Name == "" {
+		return farm, fmt.Errorf("start room not defined")
+	}
+
+	if farm.EndRoom.Name == "" {
+		return farm, fmt.Errorf("end room not defined")
 	}
 
 	return farm, nil
