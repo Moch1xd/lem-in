@@ -34,6 +34,9 @@ func ParseFile(filename string) (AntFarm, error) {
 	if err != nil {
 		return farm, err
 	}
+	if num <= 0 {
+		return farm, fmt.Errorf("invalid number of ants: %d", num)
+	}
 	farm.NumberOfAnts = num
 
 	startRoom := false
@@ -56,11 +59,20 @@ func ParseFile(filename string) (AntFarm, error) {
 				return farm, fmt.Errorf("tunnel cannot connect a room to itself: %s", line)
 			}
 			tunnel := Tunnel{Room1: pieces[0], Room2: pieces[1]}
+			for _, existingTunnel := range farm.Tunnels {
+				if (existingTunnel.Room1 == tunnel.Room1 && existingTunnel.Room2 == tunnel.Room2) ||
+					(existingTunnel.Room1 == tunnel.Room2 && existingTunnel.Room2 == tunnel.Room1) {
+					return farm, fmt.Errorf("duplicate tunnel: %s", line)
+				}
+			}
 			farm.Tunnels = append(farm.Tunnels, tunnel)
 		} else {
 			parts := strings.Fields(line)
 			if len(parts) != 3 {
 				return farm, fmt.Errorf("invalid room definition: %s", line)
+			}
+			if strings.HasPrefix(parts[0], "L") {
+				return farm, fmt.Errorf("room name cannot start with 'L': %s", line)
 			}
 			x, err1 := strconv.Atoi(parts[1])
 			y, err2 := strconv.Atoi(parts[2])
