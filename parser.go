@@ -8,6 +8,15 @@ import (
 	"strings"
 )
 
+func roomExists(rooms []Room, name string) bool {
+	for _, r := range rooms {
+		if r.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 func ParseFile(filename string) (AntFarm, error) {
 	var farm AntFarm
 
@@ -36,6 +45,8 @@ func ParseFile(filename string) (AntFarm, error) {
 			startRoom = true
 		} else if line == "##end" {
 			endRoom = true
+		} else if strings.HasPrefix(line, "#") {
+			continue
 		} else if strings.Contains(line, "-") {
 			pieces := strings.Split(line, "-")
 			if len(pieces) != 2 {
@@ -70,6 +81,12 @@ func ParseFile(filename string) (AntFarm, error) {
 				farm.EndRoom = room
 				endRoom = false
 			}
+		}
+	}
+
+	for _, tunnel := range farm.Tunnels {
+		if !roomExists(farm.Rooms, tunnel.Room1) || !roomExists(farm.Rooms, tunnel.Room2) {
+			return farm, fmt.Errorf("tunnel connects to non-existent room: %s-%s", tunnel.Room1, tunnel.Room2)
 		}
 	}
 
